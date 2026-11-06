@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#151d27">
+
+    <title>BenchTrack | Workshop Management</title>
+
+    <link rel="icon" type="image/svg+xml" href="/static/benchtrack-mark.svg">
+
+    <!-- Apply the saved theme before loading the stylesheet -->
+    <script>
+        (() => {
+            try {
+                const saved = localStorage.getItem("benchtrack-theme");
+                const systemDark = window.matchMedia(
+                    "(prefers-color-scheme: dark)"
+                ).matches;
+
+                const theme = ["light", "dark"].includes(saved)
+                    ? saved
+                    : systemDark
+                        ? "dark"
+                        : "light";
+
+                document.documentElement.dataset.theme = theme;
+            } catch {
+                document.documentElement.dataset.theme = "light";
+            }
+        })();
+    </script>
+
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a class="brand" href="#" data-page="dashboard">
+          <img
+            src="/static/benchtrack-mark.svg"
+            alt="BenchTrack"
+            class="brand-mark"
+          >
+
+          <span class="brand-copy">
+            <strong>BenchTrack</strong>
+            <small>WORKSHOP MANAGEMENT</small>
+          </span>
+        </a>
+
+        <button
+          class="sidebar-toggle"
+          id="sidebar-toggle"
+          type="button"
+          aria-label="Collapse sidebar"
+          aria-expanded="true"
+          aria-controls="sidebar"
+          title="Collapse sidebar"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+            <path d="M9 4v16"></path>
+            <path d="m15 9-3 3 3 3"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="nav-label">WORKSPACE</div>
+
+      <nav class="navigation">
+        <button class="nav-link active" data-page="dashboard" type="button">
+          <span class="nav-icon">▦</span>
+          <span class="nav-text">Dashboard</span>
+        </button>
+
+        <button class="nav-link" data-page="items" type="button">
+          <span class="nav-icon">▤</span>
+          <span class="nav-text">Inventory</span>
+        </button>
+
+        <button class="nav-link" data-page="categories" type="button">
+          <span class="nav-icon">▧</span>
+          <span class="nav-text">Categories</span>
+        </button>
+
+        <button class="nav-link" data-page="movements" type="button">
+          <span class="nav-icon">⇄</span>
+          <span class="nav-text">Stock movements</span>
+        </button>
+
+        <button class="nav-link" data-page="maintenance" type="button">
+          <span class="nav-icon">⚙</span>
+          <span class="nav-text">Maintenance</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="system-status">
+          <span class="status-dot"></span>
+          <span>
+            <strong>System operational</strong>
+            <small>BenchTrack local server</small>
+          </span>
+        </div>
+        <small class="sidebar-version">BENCHTRACK · VERSION 0.1.0</small>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button
+            class="mobile-menu"
+            id="mobile-menu"
+            type="button"
+            aria-label="Open menu"
+            aria-expanded="false"
+            aria-controls="sidebar"
+          >
+            ☰
+          </button>
+          <div>
+            <div class="breadcrumb">
+              WORKSPACE <span>/</span> <strong id="breadcrumb-current">Dashboard</strong>
+            </div>
+            <h1 id="page-title">Dashboard</h1>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button
+            id="theme-toggle"
+            class="button button-secondary theme-toggle"
+            type="button"
+            aria-label="Change color theme"
+            title="Color theme: System"
+          >
+            <span id="theme-label">System</span>
+          </button>
+
+          <span class="today-label" id="today-label"></span>
+
+          <button class="button button-secondary" id="refresh-button" type="button">
+            ↻ Refresh
+          </button>
+        </div>
+      </header>
+
+      <div id="alert-area" class="alert-area" aria-live="polite"></div>
+
+      <section class="page-section active" id="page-dashboard">
+        <div class="dashboard-intro">
+          <div>
+            <p class="eyebrow">WORKSPACE / OVERVIEW</p>
+            <h2>Workshop overview</h2>
+            <p class="muted">
+              A clear view of inventory, stock availability and maintenance operations.
+            </p>
+          </div>
+
+          <div class="dashboard-intro-actions">
+            <button class="button button-secondary" data-page="movements" type="button">
+              <span>↔</span> Stock movements
+            </button>
+            <button class="button button-primary" data-page="items" type="button">
+              <span>＋</span> View inventory
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card stat-card-inventory">
+            <div class="stat-top">
+              <span>Total equipment</span>
+              <span class="stat-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="4" y="4" width="16" height="16" rx="3"></rect>
+                  <path d="M8 8h8M8 12h8M8 16h5"></path>
+                </svg>
+              </span>
+            </div>
+            <strong class="stat-value" id="stat-items">—</strong>
+            <div class="stat-bottom">
+              <small>Registered inventory items</small>
+              <span class="stat-indicator">Inventory</span>
+            </div>
+          </article>
+
+          <article class="stat-card stat-card-units">
+            <div class="stat-top">
+              <span>Total stock units</span>
+              <span class="stat-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m12 3 9 5-9 5-9-5 9-5Z"></path>
+                  <path d="m3 12 9 5 9-5M3 16l9 5 9-5"></path>
+                </svg>
+              </span>
+            </div>
+            <strong class="stat-value" id="stat-units">—</strong>
+            <div class="stat-bottom">
+              <small>Total recorded quantity</small>
+              <span class="stat-indicator">Stock</span>
+            </div>
+          </article>
+
+          <article class="stat-card stat-warning">
+            <div class="stat-top">
+              <span>Low stock</span>
+              <span class="stat-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3 22 20H2L12 3Z"></path>
+                  <path d="M12 9v5M12 17h.01"></path>
+                </svg>
+              </span>
+            </div>
+            <strong class="stat-value" id="stat-low">—</strong>
+            <div class="stat-bottom">
+              <small>At or below minimum level</small>
+              <span class="stat-indicator">Attention</span>
+            </div>
+          </article>
+
+          <article class="stat-card stat-danger">
+            <div class="stat-top">
+              <span>Out of stock</span>
+              <span class="stat-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <path d="m9 9 6 6m0-6-6 6"></path>
+                </svg>
+              </span>
+            </div>
+            <strong class="stat-value" id="stat-empty">—</strong>
+            <div class="stat-bottom">
+              <small>Items with zero quantity</small>
+              <span class="stat-indicator">Critical</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="dashboard-analytics-grid">
+          <article class="panel analytics-panel inventory-health-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">INVENTORY</p>
+                <h3>Inventory health</h3>
+                <p class="muted">Current stock condition</p>
+              </div>
+              <span class="panel-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 19V5M4 19h16"></path>
+                  <path d="m7 15 4-4 3 2 5-7"></path>
+                </svg>
+              </span>
+            </div>
+
+            <div class="inventory-health-content">
+              <div class="health-chart-wrap">
+                <svg
+                  class="health-donut"
+                  id="inventory-health-chart"
+                  viewBox="0 0 180 180"
+                  role="img"
+                  aria-label="Inventory stock health chart"
+                >
+                  <circle
+                    class="health-donut-track"
+                    cx="90"
+                    cy="90"
+                    r="68"
+                    stroke-dasharray="0 427.26"
+                  ></circle>
+                  <circle
+                    class="health-donut-segment health-donut-healthy"
+                    id="health-ring-healthy"
+                    cx="90"
+                    cy="90"
+                    r="68"
+                  ></circle>
+                  <circle
+                    class="health-donut-segment health-donut-low"
+                    id="health-ring-low"
+                    cx="90"
+                    cy="90"
+                    r="68"
+                  ></circle>
+                  <circle
+                    class="health-donut-segment health-donut-empty"
+                    id="health-ring-empty"
+                    cx="90"
+                    cy="90"
+                    r="68"
+                  ></circle>
+                  <text class="health-chart-value" id="inventory-health-percent" x="90" y="86">—</text>
+                  <text class="health-chart-caption" x="90" y="105">HEALTHY</text>
+                </svg>
+              </div>
+
+              <div class="health-legend">
+                <div class="health-legend-item">
+                  <span class="legend-dot legend-healthy"></span>
+                  <span class="health-legend-label">Healthy stock</span>
+                  <strong id="health-healthy">—</strong>
+                </div>
+
+                <div class="health-legend-item">
+                  <span class="legend-dot legend-low"></span>
+                  <span class="health-legend-label">Low stock</span>
+                  <strong id="health-low">—</strong>
+                </div>
+
+                <div class="health-legend-item">
+                  <span class="legend-dot legend-empty"></span>
+                  <span class="health-legend-label">Out of stock</span>
+                  <strong id="health-empty">—</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-footer-note">
+              <span class="status-dot"></span>
+              <span>Based on current inventory quantities</span>
+            </div>
+          </article>
+
+          <article class="panel analytics-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">DISTRIBUTION</p>
+                <h3>Inventory by category</h3>
+                <p class="muted">Equipment across workshop categories</p>
+              </div>
+              <button
+                class="panel-action"
+                type="button"
+                data-page="categories"
+                aria-label="View all categories"
+                title="View categories"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div id="category-summary" class="category-summary">
+              <p class="empty-state">Loading category data…</p>
+            </div>
+          </article>
+
+          <article class="panel analytics-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">WORKSHOP OPERATIONS</p>
+                <h3>Maintenance status</h3>
+                <p class="muted">Current task breakdown</p>
+              </div>
+              <button
+                class="panel-action"
+                type="button"
+                data-page="maintenance"
+                aria-label="View maintenance tasks"
+                title="View maintenance"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div id="maintenance-summary" class="maintenance-summary">
+              <p class="empty-state">Loading maintenance data…</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="dashboard-activity-grid">
+          <article class="panel activity-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">INVENTORY ACTIVITY</p>
+                <h3>Recent stock movements</h3>
+                <p class="muted">Latest incoming and outgoing changes</p>
+              </div>
+
+              <button
+                class="panel-action"
+                type="button"
+                data-page="movements"
+                aria-label="View all stock movements"
+                title="View all movements"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="table-wrap">
+              <table class="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>ITEM</th>
+                    <th>TYPE</th>
+                    <th>CHANGE</th>
+                    <th>DATE</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-movements">
+                  <tr>
+                    <td colspan="4" class="empty-state">Loading movements…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel activity-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">MAINTENANCE ACTIVITY</p>
+                <h3>Recent maintenance</h3>
+                <p class="muted">Latest workshop tasks</p>
+              </div>
+
+              <button
+                class="panel-action"
+                type="button"
+                data-page="maintenance"
+                aria-label="View all maintenance tasks"
+                title="View all tasks"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div id="recent-maintenance" class="recent-list">
+              <p class="empty-state">Loading maintenance…</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="page-section" id="page-items">
+        <div class="section-toolbar">
+          <div>
+            <h2>Inventory</h2>
+            <p class="muted">Manage workshop equipment and stock levels.</p>
+          </div>
+          <div class="toolbar-actions">
+            <a class="button button-secondary" href="/exports/items.csv">↓ Export CSV</a>
+            <button class="button button-primary" id="add-item-button">+ Add equipment</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="filters">
+            <input id="item-search" type="search" placeholder="Search name, SKU or description…" />
+            <select id="item-category"><option value="">All categories</option></select>
+            <select id="item-stock">
+              <option value="">All stock levels</option>
+              <option value="low">Low stock</option>
+              <option value="empty">Out of stock</option>
+            </select>
+            <button class="button button-secondary" id="item-filter-button">Apply</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>EQUIPMENT</th>
+                  <th>SKU</th>
+                  <th>CATEGORY</th>
+                  <th>QUANTITY</th>
+                  <th>MINIMUM</th>
+                  <th>LOCATION</th>
+                  <th>STATUS</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="items-table">
+                <tr><td colspan="8" class="empty-state">Loading inventory…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="items-pagination"></div>
+        </div>
+      </section>
+
+      <section class="page-section" id="page-categories">
+        <div class="section-toolbar">
+          <div>
+            <h2>Categories</h2>
+            <p class="muted">Organize equipment into workshop groups.</p>
+          </div>
+          <button class="button button-primary" id="add-category-button">+ Add category</button>
+        </div>
+        <div class="category-grid" id="categories-grid">
+          <p class="empty-state">Loading categories…</p>
+        </div>
+      </section>
+
+      <section class="page-section" id="page-movements">
+        <div class="section-toolbar">
+          <div>
+            <h2>Stock movements</h2>
+            <p class="muted">Track incoming, outgoing and adjusted quantities.</p>
+          </div>
+          <div class="toolbar-actions">
+            <a class="button button-secondary" href="/exports/stock-movements.csv">↓ Export CSV</a>
+            <button class="button button-primary" id="add-movement-button">+ Record movement</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="filters">
+            <input id="movement-search" type="search" placeholder="Search equipment or notes…" />
+            <select id="movement-type">
+              <option value="">All movement types</option>
+              <option value="IN">Stock in</option>
+              <option value="OUT">Stock out</option>
+              <option value="ADJUSTMENT">Adjustment</option>
+            </select>
+            <button class="button button-secondary" id="movement-filter-button">Apply</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ITEM</th>
+                  <th>TYPE</th>
+                  <th>QUANTITY</th>
+                  <th>PREVIOUS</th>
+                  <th>NEW STOCK</th>
+                  <th>NOTES</th>
+                  <th>DATE</th>
+                </tr>
+              </thead>
+              <tbody id="movements-table">
+                <tr><td colspan="7" class="empty-state">Loading movements…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="movements-pagination"></div>
+        </div>
+      </section>
+
+      <section class="page-section" id="page-maintenance">
+        <div class="section-toolbar">
+          <div>
+            <h2>Maintenance</h2>
+            <p class="muted">Schedule, prioritize and track maintenance tasks.</p>
+          </div>
+          <div class="toolbar-actions">
+            <a class="button button-secondary" href="/exports/maintenance-tasks.csv">↓ Export CSV</a>
+            <button class="button button-primary" id="add-task-button">+ Add task</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="filters">
+            <input id="task-search" type="search" placeholder="Search task or equipment…" />
+            <select id="task-status">
+              <option value="">All statuses</option>
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+            <select id="task-priority">
+              <option value="">All priorities</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+            <button class="button button-secondary" id="task-filter-button">Apply</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>TASK</th>
+                  <th>EQUIPMENT</th>
+                  <th>PRIORITY</th>
+                  <th>STATUS</th>
+                  <th>SCHEDULED</th>
+                  <th>COMPLETED</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="tasks-table">
+                <tr><td colspan="7" class="empty-state">Loading tasks…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="tasks-pagination"></div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>BenchTrack <span class="footer-dot">•</span> Workshop inventory &amp; maintenance</span>
+        <span>Built for reliable workshop operations</span>
+      </footer>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">BENCHTRACK</p>
+          <h2 id="modal-title">Add record</h2>
+        </div>
+        <button class="icon-button" id="modal-close" aria-label="Close">×</button>
+      </div>
+      <form id="modal-form">
+        <div id="modal-fields" class="form-grid"></div>
+        <div class="modal-actions">
+          <button type="button" class="button button-secondary" id="modal-cancel">Cancel</button>
+          <button type="submit" class="button button-primary" id="modal-submit">Save record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
